@@ -1,4 +1,4 @@
-module github.com/wttw/spf
+module github.com/fritterhoff/spf
 
 go 1.14
 
