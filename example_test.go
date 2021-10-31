@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/wttw/spf"
+	"github.com/fritterhoff/spf"
 )
 
 func ExampleCheck() {
@@ -19,7 +19,7 @@ func ExampleChecker_SPF() {
 	ip := net.ParseIP("8.8.8.8")
 	c := spf.NewChecker()
 	c.Hostname = "mail.example.com"
-	result := c.SPF(context.Background(), ip, "steve@aol.com", "aol.com")
+	result := c.SPF(context.Background(), ip, "steve@aol.com", "aol.com", false)
 	fmt.Printf("Authentication-Results: %s\n", result.AuthenticationResults())
 	// Output: Authentication-Results: mail.example.com; spf=softfail smtp.helo=aol.com
 }

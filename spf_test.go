@@ -3,14 +3,15 @@ package spf_test
 import (
 	"context"
 	"fmt"
-	"github.com/miekg/dns"
-	"github.com/wttw/spf"
 	"io"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/fritterhoff/spf"
+	"github.com/miekg/dns"
 
 	"gopkg.in/yaml.v2"
 )
@@ -250,7 +251,7 @@ func runSuite(s Suite) func(*testing.T) {
 		checker.Resolver = resolver
 		for name, test := range s.Tests {
 			t.Run(name, func(t *testing.T) {
-				actual := checker.SPF(context.Background(), test.Host, test.MailFrom, test.Helo)
+				actual := checker.SPF(context.Background(), test.Host, test.MailFrom, test.Helo, false)
 				if !test.ResultMatches(actual.String()) {
 					t.Errorf("expected %v, actual %s", test.Result, actual.String())
 				}

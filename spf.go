@@ -8,8 +8,9 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/miekg/dns"
 	"strings"
+
+	"github.com/miekg/dns"
 )
 
 // DefaultDNSLimit is the maximum number of SPF terms that require DNS resolution to
@@ -64,20 +65,21 @@ func Check(ctx context.Context, ip net.IP, mailFrom string, helo string) (Result
 	if DefaultChecker == nil {
 		DefaultChecker = NewChecker()
 	}
-	result := DefaultChecker.SPF(ctx, ip, mailFrom, helo)
+	result := DefaultChecker.SPF(ctx, ip, mailFrom, helo, false)
 	return result.Type, result.Explanation
 }
 
 // SPF checks SPF policy for a message using both smtp.mailfrom and smtp.helo.
-func (c *Checker) SPF(ctx context.Context, ip net.IP, mailFrom string, helo string) Result {
+func (c *Checker) SPF(ctx context.Context, ip net.IP, mailFrom string, helo string, fallThrough bool) Result {
 	var result Result
 	if helo != "" {
 		result = Result{
-			Type:   None,
-			ip:     ip,
-			sender: mailFrom,
-			helo:   helo,
-			c:      c,
+			Type:        None,
+			ip:          ip,
+			sender:      mailFrom,
+			helo:        helo,
+			c:           c,
+			fallThrough: fallThrough,
 		}
 		r := c.checkHost(ctx, &result, dns.Fqdn(helo), false, false)
 		result.Type = r
@@ -88,11 +90,12 @@ func (c *Checker) SPF(ctx context.Context, ip net.IP, mailFrom string, helo stri
 	}
 	if mailFrom != "" {
 		result = Result{
-			Type:   None,
-			ip:     ip,
-			sender: mailFrom,
-			helo:   helo,
-			c:      c,
+			Type:        None,
+			ip:          ip,
+			sender:      mailFrom,
+			helo:        helo,
+			c:           c,
+			fallThrough: fallThrough,
 		}
 		at := strings.LastIndex(mailFrom, "@")
 		r := c.checkHost(ctx, &result, dns.Fqdn(mailFrom[at+1:]), false, false)
