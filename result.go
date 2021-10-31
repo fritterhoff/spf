@@ -72,6 +72,7 @@ type Result struct {
 	ip          net.IP
 	sender      string
 	helo        string
+	fallThrough bool
 	c           *Checker
 }
 

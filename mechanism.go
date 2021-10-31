@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/miekg/dns"
 	"net"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/miekg/dns"
 )
 
 // Mechanism holds an SPF mechanism
@@ -43,7 +44,7 @@ func (m MechanismAll) Evaluate(_ context.Context, _ *Result, _ string) (ResultTy
 }
 
 func (m MechanismAll) String() string {
-	return mechanismString(m.Qualifier, "all","", net.IPMask{}, net.IPMask{})
+	return mechanismString(m.Qualifier, "all", "", net.IPMask{}, net.IPMask{})
 }
 
 // 5.2.  "include"
@@ -102,7 +103,7 @@ func (m MechanismInclude) Evaluate(ctx context.Context, result *Result, domain s
 }
 
 func (m MechanismInclude) String() string {
-	return mechanismString(m.Qualifier, "include",m.DomainSpec, net.IPMask{}, net.IPMask{})
+	return mechanismString(m.Qualifier, "include", m.DomainSpec, net.IPMask{}, net.IPMask{})
 }
 
 // 5.3.  "a"
@@ -148,16 +149,17 @@ func (m MechanismA) Evaluate(ctx context.Context, result *Result, domain string)
 	if resultType != None {
 		return resultType, err
 	}
-
-	for _, rr := range rrs {
-		switch v := rr.(type) {
-		case *dns.A:
-			if (&net.IPNet{IP: v.A, Mask: m.Mask4}).Contains(result.ip) {
-				return m.Qualifier, nil
-			}
-		case *dns.AAAA:
-			if (&net.IPNet{IP: v.AAAA, Mask: m.Mask6}).Contains(result.ip) {
-				return m.Qualifier, nil
+	if !result.fallThrough {
+		for _, rr := range rrs {
+			switch v := rr.(type) {
+			case *dns.A:
+				if (&net.IPNet{IP: v.A, Mask: m.Mask4}).Contains(result.ip) {
+					return m.Qualifier, nil
+				}
+			case *dns.AAAA:
+				if (&net.IPNet{IP: v.AAAA, Mask: m.Mask6}).Contains(result.ip) {
+					return m.Qualifier, nil
+				}
 			}
 		}
 	}
@@ -192,7 +194,6 @@ type MechanismMX struct {
 	Mask4      net.IPMask
 	Mask6      net.IPMask
 }
-
 
 func (m MechanismMX) Evaluate(ctx context.Context, result *Result, domain string) (ResultType, error) {
 	result.DNSQueries++
@@ -230,10 +231,11 @@ func (m MechanismMX) Evaluate(ctx context.Context, result *Result, domain string
 		if resultType != None {
 			return resultType, err
 		}
-
-		for _, address := range addresses {
-			if (&net.IPNet{IP: address, Mask: mask}).Contains(result.ip) {
-				return m.Qualifier, nil
+		if !result.fallThrough {
+			for _, address := range addresses {
+				if (&net.IPNet{IP: address, Mask: mask}).Contains(result.ip) {
+					return m.Qualifier, nil
+				}
 			}
 		}
 	}
@@ -259,7 +261,6 @@ func (m MechanismPTR) String() string {
 
 // MechanismPtr.Evaluate is in ptr.go
 
-
 // 5.6.  "ip4" and "ip6"
 //
 //   These mechanisms test whether <ip> is contained within a given
@@ -276,7 +277,7 @@ type MechanismIp4 struct {
 }
 
 func (m MechanismIp4) Evaluate(_ context.Context, result *Result, _ string) (ResultType, error) {
-	if m.Net.Contains(result.ip) {
+	if !result.fallThrough && m.Net.Contains(result.ip) {
 		return m.Qualifier, nil
 	}
 	return None, nil
@@ -294,7 +295,7 @@ type MechanismIp6 struct {
 }
 
 func (m MechanismIp6) Evaluate(_ context.Context, result *Result, _ string) (ResultType, error) {
-	if m.Net.Contains(result.ip) {
+	if !result.fallThrough && m.Net.Contains(result.ip) {
 		return m.Qualifier, nil
 	}
 	return None, nil
@@ -346,7 +347,6 @@ func (m MechanismExists) Evaluate(ctx context.Context, result *Result, domain st
 func (m MechanismExists) String() string {
 	return mechanismString(m.Qualifier, "exists", m.DomainSpec, net.IPMask{}, net.IPMask{})
 }
-
 
 //   ip4-cidr-length  = "/" ("0" / %x31-39 0*1DIGIT) ; value range 0-32
 //   ip6-cidr-length  = "/" ("0" / %x31-39 0*2DIGIT) ; value range 0-128
@@ -554,11 +554,11 @@ func NewMechanism(raw string) (Mechanism, error) {
 
 // ResultChar maps between the spf.ResultType and the equivalent single character
 // qualifier used in SPF text format.
-var ResultChar=map[ResultType]string{
-	None: "",
-	Neutral: "?",
-	Pass: "",
-	Fail: "-",
+var ResultChar = map[ResultType]string{
+	None:     "",
+	Neutral:  "?",
+	Pass:     "",
+	Fail:     "-",
 	Softfail: "~",
 }
 
@@ -575,7 +575,7 @@ func mechanismString(qualifier ResultType, name string, parameter string, mask4,
 	}
 
 	ones, bits := mask4.Size()
-	if bits != 0 && ones !=32{
+	if bits != 0 && ones != 32 {
 		sb.WriteString("/")
 		sb.WriteString(strconv.Itoa(ones))
 	}

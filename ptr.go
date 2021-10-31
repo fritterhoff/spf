@@ -3,8 +3,9 @@ package spf
 import (
 	"context"
 	"fmt"
-	"github.com/miekg/dns"
 	"strings"
+
+	"github.com/miekg/dns"
 )
 
 // 5.5.  "ptr" (do not use) (RFC 7208)
@@ -100,11 +101,12 @@ func (m MechanismPTR) Evaluate(ctx context.Context, result *Result, domain strin
 		if err != nil {
 			continue
 		}
-
-		for _, address := range addresses {
-			if address.Equal(result.ip) {
-				// this hostname is validated and matches
-				return m.Qualifier, nil
+		if !result.fallThrough {
+			for _, address := range addresses {
+				if address.Equal(result.ip) {
+					// this hostname is validated and matches
+					return m.Qualifier, nil
+				}
 			}
 		}
 	}
@@ -147,13 +149,13 @@ func expandPtrMacro(ctx context.Context, result *Result, target string) string {
 					return strings.TrimSuffix(hostname, ".")
 				}
 				possibles = append(possibles, hostname)
-				break;
+				break
 			}
 		}
 	}
 	for _, possible := range possibles {
 		if dns.IsSubDomain(target, possible) {
-			return  strings.TrimSuffix(possible, ".")
+			return strings.TrimSuffix(possible, ".")
 		}
 	}
 	if len(possibles) > 0 {
