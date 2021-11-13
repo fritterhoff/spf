@@ -239,7 +239,7 @@ func (m MechanismMX) Evaluate(ctx context.Context, result *Result, domain string
 			}
 		}
 	}
-
+	result.MXEntries = append(result.MXEntries, mxcount)
 	return None, nil
 }
 
