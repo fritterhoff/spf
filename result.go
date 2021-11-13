@@ -66,7 +66,6 @@ type Result struct {
 	Type        ResultType
 	Error       error
 	DNSQueries  int
-	MXEntries   []int
 	VoidLookups int
 	Explanation string
 	UsedHelo    bool
