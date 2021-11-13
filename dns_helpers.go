@@ -3,12 +3,11 @@ package spf
 import (
 	"context"
 	"fmt"
+	"github.com/miekg/dns"
 	"net"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/miekg/dns"
 )
 
 var spfPrefixRe = regexp.MustCompile(`(?i)^v=spf1(?: |$)`)
@@ -146,7 +145,7 @@ func (c *Checker) lookupDNS(ctx context.Context, hostname string, qtype uint16, 
 	if m.Rcode == dns.RcodeNameError || (m.Rcode == dns.RcodeSuccess && len(m.Answer) == 0) {
 		// NXDOMAIN or zero records
 		result.VoidLookups++
-		if !result.fallThrough && result.VoidLookups > c.VoidQueryLimit {
+		if result.VoidLookups > c.VoidQueryLimit {
 			return []dns.RR{}, Permerror, fmt.Errorf("void queries exceeded limit of %d", c.VoidQueryLimit)
 		}
 		return []dns.RR{}, None, nil
