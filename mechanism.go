@@ -224,7 +224,7 @@ func (m MechanismMX) Evaluate(ctx context.Context, result *Result, domain string
 	for _, mxrr := range mxrrs {
 		mx := mxrr.(*dns.MX)
 		mxcount++
-		if mxcount > result.c.MXAddressLimit {
+		if !result.fallThrough && mxcount > result.c.MXAddressLimit {
 			return Permerror, fmt.Errorf("limit of %d MX results exceeded for %s", result.c.MXAddressLimit, target)
 		}
 		addresses, resultType, err := result.c.lookupAddresses(ctx, mx.Mx, qtype, result)
