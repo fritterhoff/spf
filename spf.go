@@ -179,6 +179,7 @@ func (c *Checker) checkHostCore(ctx context.Context, result *Result, domain stri
 		return Permerror
 	}
 	result.visited[domain] = true
+	defer delete(result.visited, domain)
 	record, resultType, err := c.getSPFRecord(ctx, domain)
 	if err != nil {
 		result.Error = err
