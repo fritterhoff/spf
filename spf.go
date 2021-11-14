@@ -80,6 +80,7 @@ func (c *Checker) SPF(ctx context.Context, ip net.IP, mailFrom string, helo stri
 			helo:        helo,
 			c:           c,
 			fallThrough: fallThrough,
+			visited:     make(map[string]bool),
 		}
 		r := c.checkHost(ctx, &result, dns.Fqdn(helo), false, false)
 		result.Type = r
@@ -96,6 +97,7 @@ func (c *Checker) SPF(ctx context.Context, ip net.IP, mailFrom string, helo stri
 			helo:        helo,
 			c:           c,
 			fallThrough: fallThrough,
+			visited:     make(map[string]bool),
 		}
 		at := strings.LastIndex(mailFrom, "@")
 		r := c.checkHost(ctx, &result, dns.Fqdn(mailFrom[at+1:]), false, false)
@@ -172,6 +174,11 @@ func (c *Checker) checkHostCore(ctx context.Context, result *Result, domain stri
 		result.Error = fmt.Errorf("limit of %d dns queries exceeded", c.DNSLimit)
 		return Permerror
 	}
+	if _, ok := result.visited[domain]; ok {
+		result.Error = errors.New("loop detected")
+		return Permerror
+	}
+	result.visited[domain] = true
 	record, resultType, err := c.getSPFRecord(ctx, domain)
 	if err != nil {
 		result.Error = err
@@ -205,7 +212,7 @@ func (c *Checker) checkHostCore(ctx context.Context, result *Result, domain stri
 		if c.Hook != nil {
 			c.Hook.Mechanism(domain, i, mechanism, result)
 		}
-		if result.DNSQueries > c.DNSLimit {
+		if !result.fallThrough && result.DNSQueries > c.DNSLimit {
 			result.Error = fmt.Errorf("limit of %d dns queries exceeded", c.DNSLimit)
 			return Permerror
 		}

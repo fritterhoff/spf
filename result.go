@@ -66,6 +66,7 @@ type Result struct {
 	Type        ResultType
 	Error       error
 	DNSQueries  int
+	MxLookups   []int
 	VoidLookups int
 	Explanation string
 	UsedHelo    bool
@@ -74,6 +75,7 @@ type Result struct {
 	helo        string
 	fallThrough bool
 	c           *Checker
+	visited     map[string]bool
 }
 
 func (r *Result) String() string {
