@@ -170,7 +170,7 @@ func (c *Checker) checkHostCore(ctx context.Context, result *Result, domain stri
 	//  during SPF evaluation, to avoid unreasonable load on the DNS.  If
 	//  this limit is exceeded, the implementation MUST return "permerror".
 	result.DNSQueries++
-	if result.DNSQueries > c.DNSLimit {
+	if !result.fallThrough && result.DNSQueries > c.DNSLimit {
 		result.Error = fmt.Errorf("limit of %d dns queries exceeded", c.DNSLimit)
 		return Permerror
 	}
@@ -217,7 +217,9 @@ func (c *Checker) checkHostCore(ctx context.Context, result *Result, domain stri
 			return Permerror
 		}
 		if resultType != None {
-			result.Error = err
+			if err != nil {
+				result.Error = err
+			}
 			if err == nil && !include && resultType == Fail && mechanisms.Exp != "" {
 				target, err := c.ExpandDomainSpec(ctx, mechanisms.Exp, result, domain, false)
 				if err != nil {
