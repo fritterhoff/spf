@@ -13,6 +13,8 @@ import (
 
 var spfPrefixRe = regexp.MustCompile(`(?i)^v=spf1(?: |$)`)
 
+var byteMatcher = regexp.MustCompile(`\\(009|010|013)`)
+
 // Gets a single SPF record for a domain, as a single string
 func (c *Checker) getSPFRecord(ctx context.Context, domain string) (string, ResultType, error) {
 	r := &dns.Msg{}
@@ -51,6 +53,16 @@ func (c *Checker) getSPFRecord(ctx context.Context, domain string) (string, Resu
 			continue
 		}
 		record := strings.Join(txt.Txt, "")
+		// replace ascii content in TXT records with a char
+		if byteMatcher.MatchString(record) {
+			x := byteMatcher.FindAllStringSubmatch(record, -1)
+			for _, y := range x {
+				ch, err := strconv.Atoi(y[1])
+				if err == nil {
+					record = strings.ReplaceAll(record, y[0], string(ch))
+				}
+			}
+		}
 		if spfPrefixRe.MatchString(record) {
 			spfRecords = append(spfRecords, record)
 		}
